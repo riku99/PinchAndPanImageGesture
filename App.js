@@ -1,6 +1,6 @@
-import React from 'react';
-import {Image, View, Dimensions, StyleSheet, Animated} from 'react-native';
-import {PinchGestureHandler} from 'react-native-gesture-handler';
+import React, {useRef} from 'react';
+import {View, Dimensions, StyleSheet, Animated} from 'react-native';
+import {PinchGestureHandler, State} from 'react-native-gesture-handler';
 
 const image = require('./flight.jpg');
 
@@ -8,23 +8,44 @@ const {width, height} = Dimensions.get('window');
 
 const App = () => {
   // コンポーネントのアニメーションにはAnimated.Valueから生成したオブジェクトが必要
-  const scale = new Animated.Value(1);
+  const scale = useRef(new Animated.Value(1)).current;
+  const _scale = useRef(new Animated.Value(1)).current;
+  const totalDiff = useRef(0);
+  const scaleRef = useRef(1);
+
+  scale.addListener(e => {
+    const diff = 1 - e.value;
+    totalDiff.current = diff;
+    _scale.setValue(scaleRef.current - diff);
+  });
 
   // panningやscrollingなどのジェスチャーに関するイベントを直接animated values(Animated.valueで生成された値)に結びつけるためのシンタックス
   // 複雑なイベントオブジェクトを簡単に結びつけることに繋がる
   // あと、確かこのやり方じゃないとuseNativeDriverが使えなかった気がする
-  // listnerを加えることでコールバックも実装できる
+  //listnerを加えることでコールバックも実装できる;
   const onZoomEvent = Animated.event([{nativeEvent: {scale: scale}}], {
     useNativeDriver: true,
-    listener: () => console.log('this is listner!'),
+    listener: e => {
+      //console.log('Eventの値' + e.nativeEvent.scale);
+    },
   });
+
+  const onHandlerStateChange = e => {
+    if (e.nativeEvent.state === State.END) {
+      scaleRef.current -= totalDiff.current;
+      totalDiff.current = 0;
+      console.log(scaleRef.current);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <PinchGestureHandler onGestureEvent={onZoomEvent}>
+      <PinchGestureHandler
+        onGestureEvent={onZoomEvent}
+        onHandlerStateChange={onHandlerStateChange}>
         <Animated.Image
           source={image}
-          style={[styles.image, {transform: [{scale}]}]}
+          style={[styles.image, {transform: [{scale: _scale}]}]}
           resizeMode="contain"
         />
       </PinchGestureHandler>
