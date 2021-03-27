@@ -1,6 +1,11 @@
+import {transform} from '@babel/core';
 import React, {useRef} from 'react';
 import {View, Dimensions, StyleSheet, Animated} from 'react-native';
-import {PinchGestureHandler, State} from 'react-native-gesture-handler';
+import {
+  PinchGestureHandler,
+  PanGestureHandler,
+  State,
+} from 'react-native-gesture-handler';
 
 const image = require('./flight.jpg');
 
@@ -25,8 +30,9 @@ const App = () => {
   // 複雑なイベントオブジェクトを簡単に結びつけることに繋がる
   // あと、確かこのやり方じゃないとuseNativeDriverが使えなかった気がする
   //listnerを加えることでコールバックも実装できる;
+  // gesture-handlerをネストする場合はuseNativeDriverはtrueにできない
   const onZoomEvent = Animated.event([{nativeEvent: {scale: scale}}], {
-    useNativeDriver: true,
+    useNativeDriver: false,
     listener: e => {
       //console.log('Eventの値' + e.nativeEvent.scale);
     },
@@ -39,16 +45,29 @@ const App = () => {
     }
   };
 
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const onPanGesture = Animated.event(
+    [{nativeEvent: {translationX: translateX, translationY: translateY}}],
+    {useNativeDriver: false},
+  );
+
   return (
     <View style={styles.container}>
       <PinchGestureHandler
         onGestureEvent={onZoomEvent}
         onHandlerStateChange={onHandlerStateChange}>
-        <Animated.Image
-          source={image}
-          style={[styles.image, {transform: [{scale: _scale}]}]}
-          resizeMode="contain"
-        />
+        <PanGestureHandler onGestureEvent={onPanGesture}>
+          <Animated.Image
+            source={image}
+            style={[
+              styles.image,
+              {transform: [{scale: _scale}, {translateX}, {translateY}]},
+            ]}
+            resizeMode="contain"
+          />
+        </PanGestureHandler>
       </PinchGestureHandler>
     </View>
   );
