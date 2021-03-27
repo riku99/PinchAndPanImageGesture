@@ -10,13 +10,15 @@ const App = () => {
   // コンポーネントのアニメーションにはAnimated.Valueから生成したオブジェクトが必要
   const scale = useRef(new Animated.Value(1)).current;
   const _scale = useRef(new Animated.Value(1)).current;
+
   const totalDiff = useRef(0);
   const scaleRef = useRef(1);
 
   scale.addListener(e => {
-    const diff = 1 - e.value;
+    const diff = (1 - e.value) / 3;
     totalDiff.current = diff;
-    _scale.setValue(scaleRef.current - diff);
+    const value = scaleRef.current - diff;
+    _scale.setValue(value);
   });
 
   // panningやscrollingなどのジェスチャーに関するイベントを直接animated values(Animated.valueで生成された値)に結びつけるためのシンタックス
@@ -31,7 +33,7 @@ const App = () => {
   });
 
   const onHandlerStateChange = e => {
-    if (e.nativeEvent.state === State.END) {
+    if (e.nativeEvent.state === State.END || State.CANCELLED) {
       scaleRef.current -= totalDiff.current;
       totalDiff.current = 0;
       console.log(scaleRef.current);
