@@ -36,7 +36,6 @@ const App = () => {
     if (e.nativeEvent.state === State.END || State.CANCELLED) {
       scaleRef.current -= totalDiff.current;
       totalDiff.current = 0;
-      console.log(scaleRef.current);
     }
   };
 
