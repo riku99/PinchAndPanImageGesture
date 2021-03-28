@@ -1,4 +1,3 @@
-import {transform} from '@babel/core';
 import React, {useRef} from 'react';
 import {View, Dimensions, StyleSheet, Animated} from 'react-native';
 import {
@@ -47,18 +46,37 @@ const App = () => {
 
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+  // 要素の座標
+  const offsetX = useRef(0);
+  const offsetY = useRef(0);
 
-  const onPanGesture = Animated.event(
-    [{nativeEvent: {translationX: translateX, translationY: translateY}}],
-    {useNativeDriver: false},
-  );
+  // 1回のジェスチャーを1つのセッションとして考え、そのセッションでどれだけの差分が出たかを記録
+  const panGestureDiffY = useRef(0);
+  const panGestureDiffX = useRef(0);
+
+  const onPanGesture = e => {
+    const {translationX, translationY} = e.nativeEvent;
+    translateX.setValue(offsetX.current + translationX);
+    translateY.setValue(offsetY.current + translationY);
+    panGestureDiffX.current = translationX;
+    panGestureDiffY.current = translationY;
+  };
+
+  const onPanGestureEnd = () => {
+    offsetX.current += panGestureDiffX.current;
+    offsetY.current += panGestureDiffY.current;
+    panGestureDiffX.current = 0;
+    panGestureDiffY.current = 0;
+  };
 
   return (
     <View style={styles.container}>
       <PinchGestureHandler
         onGestureEvent={onZoomEvent}
         onHandlerStateChange={onHandlerStateChange}>
-        <PanGestureHandler onGestureEvent={onPanGesture}>
+        <PanGestureHandler
+          onGestureEvent={onPanGesture}
+          onEnded={onPanGestureEnd}>
           <Animated.Image
             source={image}
             style={[
