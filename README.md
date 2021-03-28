@@ -1,0 +1,5 @@
+# PinchAndPanImageGesture
+
+react-native-gesture-handler を使って画像を拡大したり、縮小したり、移動させたりする実装の記録
+
+実際にアプリで実装する前にすっきりした環境で実装してみたかったので別リポジトリで作成
