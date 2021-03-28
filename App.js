@@ -15,13 +15,15 @@ const App = () => {
   const scale = useRef(new Animated.Value(1)).current;
   const _scale = useRef(new Animated.Value(1)).current;
 
+  // 1回のジェスチャーを1回のセッションとみなし、そのセッション内での差分を記録する。セッション終了したら0に戻す(onHandlerStateChangeで実装)
   const totalDiff = useRef(0);
+  // セッションごとにリセットされてしまわないようにセッション終了ごとにその時点でのスケールの値を記録
   const scaleRef = useRef(1);
 
   scale.addListener(e => {
-    const diff = (1 - e.value) / 3;
-    totalDiff.current = diff;
-    const value = scaleRef.current - diff;
+    const diff = (1 - e.value) / 3; // スケールのスピードを少し遅くしたいので/3
+    totalDiff.current = diff; // そのセッションでどれだけ差分が出たかを記録
+    const value = scaleRef.current - diff; // その時のscaleから出た差分をスケールさせたいので sacaleRef.current - diff
     _scale.setValue(value);
   });
 
@@ -30,17 +32,18 @@ const App = () => {
   // あと、確かこのやり方じゃないとuseNativeDriverが使えなかった気がする
   //listnerを加えることでコールバックも実装できる;
   // gesture-handlerをネストする場合はuseNativeDriverはtrueにできない
+  // 今回の機能の場合は、Animated.eventを使わない方が簡潔だが、記録として残したいので使ってる
   const onZoomEvent = Animated.event([{nativeEvent: {scale: scale}}], {
     useNativeDriver: false,
     listener: e => {
-      //console.log('Eventの値' + e.nativeEvent.scale);
+      // コールバックの定義
     },
   });
 
   const onHandlerStateChange = e => {
     if (e.nativeEvent.state === State.END || State.CANCELLED) {
-      scaleRef.current -= totalDiff.current;
-      totalDiff.current = 0;
+      scaleRef.current -= totalDiff.current; // セッション終了時のスケールの値を記録
+      totalDiff.current = 0; // セッション終了で0に戻す
     }
   };
 
@@ -74,18 +77,20 @@ const App = () => {
       <PinchGestureHandler
         onGestureEvent={onZoomEvent}
         onHandlerStateChange={onHandlerStateChange}>
-        <PanGestureHandler
-          onGestureEvent={onPanGesture}
-          onEnded={onPanGestureEnd}>
-          <Animated.Image
-            source={image}
-            style={[
-              styles.image,
-              {transform: [{scale: _scale}, {translateX}, {translateY}]},
-            ]}
-            resizeMode="contain"
-          />
-        </PanGestureHandler>
+        <View style={styles.pinchView}>
+          <PanGestureHandler
+            onGestureEvent={onPanGesture}
+            onEnded={onPanGestureEnd}>
+            <Animated.Image
+              source={image}
+              style={[
+                styles.image,
+                {transform: [{scale: _scale}, {translateX}, {translateY}]},
+              ]}
+              resizeMode="contain"
+            />
+          </PanGestureHandler>
+        </View>
       </PinchGestureHandler>
     </View>
   );
@@ -96,6 +101,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pinchView: {
+    width,
+    height: '100%',
   },
   image: {
     width,
